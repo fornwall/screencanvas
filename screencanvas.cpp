@@ -1,18 +1,21 @@
 #include "screencanvas.hpp"
 
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 
+static struct winsize global_termsize;
+static bool global_termsize_changed = false;
+
 static void sigwinch_handler(int)
 {
-        struct winsize termSize;
-        if (ioctl(STDIN_FILENO, TIOCGWINSZ, (char*) &termSize) < 0) {
+        if (ioctl(STDIN_FILENO, TIOCGWINSZ, (char*) &global_termsize) < 0) {
                 perror("ioctl() failed");
                 exit(1);
         }
-        printf("screen size changed\n");
+        global_termsize_changed = true;
 }
 
 
@@ -51,34 +54,55 @@ Terminal::~Terminal() {
         if (keypad_app_set) printf("\033[?66l"); // CSI ? 1 h, Application Cursor Keys
         if (bracketed_paste_mode) printf("\033[?2004l");
         if (cursor_hidden) showCursor();
+        if (mouse_enabled) disableMouse();
+        setForeground(Color::DEFAULT).setBackground(Color::DEFAULT);
         if (alt_screen_set) leaveAltScreen();
         fflush(stdout);
 };
 
 EventType Terminal::await() {
-        if (mReadBufferLength > mReadBufferOffset) return EventType::CHAR;
+        mLastEventType = EventType::NONE;
+        while (mLastEventType == EventType::NONE) {
+                if (mReadBufferLength == 0) {
+                        int bytesRead = read(STDIN_FILENO, mReadBuffer + mReadBufferOffset, sizeof(mReadBuffer) - mReadBufferOffset - mReadBufferLength);
+                        if (bytesRead == 0) {
+                                perror("read(0");
+                                exit(1);
+                        } else if (bytesRead < 0) {
+                                if (errno == EINTR && global_termsize_changed) {
+                                        mLastEventType = EventType::RESIZE;
+                                        mRows = global_termsize.ws_row;
+                                        mColumns = global_termsize.ws_col;
+                                        global_termsize_changed = false;
+                                } else {
+                                        print("READ SIGNAL");
+                                        perror("read()");
+                                        exit(1);
+                                }
+                        } else {
+                                mReadBufferLength += bytesRead;
+                        }
+                }
 
-        int bytesReadNow = read(STDIN_FILENO, mReadBuffer + mReadBufferOffset, sizeof(mReadBuffer) - mReadBufferOffset - mReadBufferLength);
-        if (bytesReadNow == 0) {
-                perror("read(0");
-                exit(1);
-        } else if (bytesReadNow < 0) {
-                perror("read()");
-                exit(1);
-        } else {
-                mReadBufferLength += bytesReadNow;
-                return EventType::CHAR;
+                while (mLastEventType == EventType::NONE && mReadBufferLength > 0) {
+                        processByte(mReadBuffer[mReadBufferOffset]);
+                        if (--mReadBufferLength == 0) {
+                                mReadBufferOffset = 0;
+                        } else {
+                                mReadBufferOffset++;
+                        }
+                }
         }
-        return EventType::RESIZE;
+        return mLastEventType;
 }
 
-Terminal& Terminal::moveCursor(int rowsDown, int columnsRight) {
+Terminal& Terminal::moveCursor(int up, int right) {
         // CSI Ps A Cursor Up Ps Times (default = 1) (CUU).
         // CSI Ps B Cursor Down Ps Times (default = 1) (CUD).
         // CSI Ps C Cursor Forward Ps Times (default = 1) (CUF).
         // CSI Ps D Cursor Backward Ps Times (default = 1) (CUB).
-        if (rowsDown != 0) printf("\033[%d%c", rowsDown < 0 ? -rowsDown : rowsDown, rowsDown < 0 ? 'A' : 'B');
-        if (rowsDown != 0) printf("\033[%d%c", columnsRight < 0 ? -columnsRight : columnsRight, columnsRight < 0 ? 'C' : 'D');
+        if (up != 0) printf("\033[%d%c", up > 0 ? up : -up, up > 0 ? 'A' : 'B');
+        if (right != 0) printf("\033[%d%c", right > 0 ? right : -right, right > 0 ? 'C' : 'D');
         fflush(stdout);
         return *this;
 };
@@ -91,26 +115,14 @@ void Terminal::fillRectangle(unsigned int left, unsigned int top, unsigned int r
         print("\033[%d;%d;%d;%d;%d$x", codepoint, bottom, left, top, right);
 }
 
-uint32_t Terminal::eatChar() {
-        if (mReadBufferLength == 0) return 0;
-        uint32_t returnValue = mReadBuffer[mReadBufferOffset];
-        if (--mReadBufferLength == 0) {
-                mReadBufferOffset = 0;
-        } else {
-                mReadBufferOffset++;
-        }
-        return returnValue;
-
-}
-
 void Terminal::processByte(uint8_t byte) {
-        bool leaveEscapeState = true;
-        mLastEventType = EventType::NONE;
         switch (mEscapeState) {
                 case EscapeState::NONE:
                         if (byte == 27) {
                                 mEscapeState = EscapeState::ESCAPE;
-                                leaveEscapeState = false;
+                        } else {
+                                mLastCharacter = byte;
+                                mLastEventType = EventType::CHAR;
                         }
                         break;
                 case EscapeState::ESCAPE:
@@ -118,21 +130,45 @@ void Terminal::processByte(uint8_t byte) {
                                 case '[':
                                         mEscapeState = EscapeState::CSI;
                                         break;
+                                default:
+                                        escapeError("invalid input in ESCAPE");
+                                        break;
+                        }
+                        break;
+                case EscapeState::CSI:
+                        switch (byte) {
                                 case 'A':
                                 case 'B':
                                 case 'C':
                                 case 'D':
                                         mLastKey = Key(uint32_t(Key::UP) + (byte - 'A'));
                                         mLastEventType = EventType::KEY;
+                                        escapeDone();
+                                        break;
+                                case '<':
+                                        mEscapeState = EscapeState::CSI_LOWERTHAN;
                                         break;
                                 default:
-                                        abortEscapeState("invalid input in ESCAPE");
+                                        escapeError("unhandled byte in CSI");
+                        }
+                        break;
+                case EscapeState::CSI_LOWERTHAN:
+                        switch (byte) {
+                                case 'm':
+                                case 'M':
+                                        if (mCurrentEscapeArg != 2) {
+                                                escapeError("MOUSE: %d, %c", mCurrentEscapeArg, byte);
+                                        } else {
+                                                mLastMouseColumn = argAsNumber(1);
+                                                mLastMouseRow = flipRow(argAsNumber(2));
+                                                mLastEventType = (byte == 'M') ? EventType::MOUSE_DOWN : EventType::MOUSE_UP;
+                                                escapeDone();
+                                        }
+                                        break;
+                                default:
+                                        addEscapeArg(byte);
                                         break;
                         }
                         break;
-                case EscapeState::CSI:
-                        abortEscapeState("CSI unhandled");
-                        break;
         }
-        if (leaveEscapeState) mEscapeState = EscapeState::NONE;
 }
