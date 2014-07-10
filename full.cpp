@@ -6,7 +6,7 @@ int main() {
         term.enterAltScreen().enableMouse().placeCursor(50, 50);
         term.placeCursor(term.columns() / 2, term.rows() - 1).print("[HELLO WORLD]");
         term.placeCursor(5, 5);
-        term.setForeground(Color::RED).setBackground(Color::BLUE);
+        term.setForeground(Color::BLACK).setBackground(Color::GREEN).clear();
         term.fillRectangle(50, 8, 60, 10, 'X');
         term.print("Hello %d, %d", term.rows(), term.columns());
         bool run = true;
