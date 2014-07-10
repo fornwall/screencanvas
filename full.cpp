@@ -31,14 +31,13 @@ int main() {
                                }
                                break;
                        case EventType::RESIZE:
-                               term.setTitle("RESIZE %d,%d", term.columns(), term.rows());
+                               term.setTitle("RESIZE %d,%d", term.columns(), term.rows()).clear().placeCursor(term.columns()/2, 0);
                                break;
                        case EventType::TIMEOUT:
                                term.print("TIMEOUT ");
                                break;
                        case EventType::MOUSE_DOWN:
                        case EventType::MOUSE_UP:
-                               //term.print("(%d, %d) ", term.lastMouseColumn(), term.lastMouseRow());
                                term.placeCursor(term.lastMouseColumn(), term.lastMouseRow());
                                break;
                        default:
