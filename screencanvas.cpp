@@ -58,7 +58,7 @@ Terminal::~Terminal() {
         setForeground(Color::DEFAULT).setBackground(Color::DEFAULT);
         if (alt_screen_set) leaveAltScreen();
         fflush(stdout);
-};
+}
 
 EventType Terminal::await() {
         mLastEventType = EventType::NONE;
@@ -105,7 +105,7 @@ Terminal& Terminal::moveCursor(int up, int right) {
         if (right != 0) printf("\033[%d%c", right > 0 ? right : -right, right > 0 ? 'C' : 'D');
         fflush(stdout);
         return *this;
-};
+}
 
 void Terminal::fillRectangle(unsigned int left, unsigned int top, unsigned int right, unsigned int bottom, uint32_t codepoint) {
         clipToScreen(top, left);
@@ -212,7 +212,7 @@ Terminal& Terminal::print(char const* fmt, ...) {
         va_end(argp);
         fflush(stdout);
         return *this;
-};
+}
 
 Terminal& Terminal::setTitle(char const* fmt, ...) { 
         print("\033]0;");
