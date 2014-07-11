@@ -12,7 +12,7 @@
 enum class EventType : uint8_t { KEY, MOUSE_DOWN, MOUSE_UP, CHAR, RESIZE, TIMEOUT, PASTE, NONE };
 enum class Key : uint16_t { UP, DOWN, RIGHT, LEFT, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 };
 enum class ModifierKey : uint8_t { CTRL, SHIFT, ALT };
-enum class Color : uint16_t { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, DEFAULT };
+enum class Color : uint16_t { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, DEFAULT=9 };
 struct Size { unsigned int rows, columns; };
 enum class EscapeState { NONE, ESCAPE, ESCAPE_O, CSI, CSI_LOWERTHAN };
 
