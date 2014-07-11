@@ -111,7 +111,6 @@ void Terminal::fillRectangle(unsigned int left, unsigned int top, unsigned int r
         clipToScreen(top, left);
         clipToScreen(bottom, right);
         if (bottom >= top || left >= right) return;
-        print("ARG=%d;%d;%d;%d;%d$x", codepoint, bottom, left, top, right);
         print("\033[%d;%d;%d;%d;%d$x", codepoint, bottom, left, top, right);
 }
 
@@ -129,6 +128,9 @@ void Terminal::processByte(uint8_t byte) {
                         switch (byte) {
                                 case '[':
                                         mEscapeState = EscapeState::CSI;
+                                        break;
+                                case 'O':
+                                        mEscapeState = EscapeState::ESCAPE_O;
                                         break;
                                 default:
                                         escapeError("invalid input in ESCAPE");
@@ -148,8 +150,27 @@ void Terminal::processByte(uint8_t byte) {
                                 case '<':
                                         mEscapeState = EscapeState::CSI_LOWERTHAN;
                                         break;
+                                case '~':
+                                        if (mCurrentEscapeArg != 0) {
+                                                escapeError("Found ~ after CSI, but num args=%d", mCurrentEscapeArg);
+                                        } else {
+                                                switch (argAsNumber(0)) {
+                                                        case 15: mLastKey = Key::F5; break;
+                                                        case 17: mLastKey = Key::F6; break;
+                                                        case 18: mLastKey = Key::F7; break;
+                                                        case 19: mLastKey = Key::F8; break;
+                                                        case 20: mLastKey = Key::F9; break;
+                                                        case 21: mLastKey = Key::F10; break;
+                                                        case 23: mLastKey = Key::F11; break;
+                                                        case 24: mLastKey = Key::F12; break;
+                                                        default: escapeError("Unknown CSI ~ number"); return;
+                                                }
+                                                mLastEventType = EventType::KEY;
+                                                escapeDone();
+                                        }
+                                        break;
                                 default:
-                                        escapeError("unhandled byte in CSI");
+                                        addEscapeArg(byte);
                         }
                         break;
                 case EscapeState::CSI_LOWERTHAN:
@@ -170,5 +191,36 @@ void Terminal::processByte(uint8_t byte) {
                                         break;
                         }
                         break;
+                case EscapeState::ESCAPE_O:
+                        switch (byte) {
+                                case 'P': mLastKey = Key::F1; break;
+                                case 'Q': mLastKey = Key::F2; break;
+                                case 'R': mLastKey = Key::F3; break;
+                                case 'S': mLastKey = Key::F4; break;
+                                default: escapeError("ESCAPE_O followed by strange char"); return;
+                        }
+                        mLastEventType = EventType::KEY;
+                        escapeDone();
+                        break;
         }
+}
+
+Terminal& Terminal::print(char const* fmt, ...) {
+        va_list argp;
+        va_start(argp, fmt);
+        vfprintf(stdout, fmt, argp);
+        va_end(argp);
+        fflush(stdout);
+        return *this;
+};
+
+Terminal& Terminal::setTitle(char const* fmt, ...) { 
+        print("\033]0;");
+        va_list argp;
+        va_start(argp, fmt);
+        vfprintf(stdout, fmt, argp);
+        va_end(argp);
+        fflush(stdout);
+        print("\007");
+        return *this;
 }

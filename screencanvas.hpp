@@ -9,45 +9,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-enum class EventType : uint8_t { KEY, MOUSE_DOWN, MOUSE_UP, CHAR, RESIZE, TIMEOUT, NONE };
-enum class Key : uint16_t { UP, DOWN, RIGHT, LEFT, F1, F2, F3, F4 };
+enum class EventType : uint8_t { KEY, MOUSE_DOWN, MOUSE_UP, CHAR, RESIZE, TIMEOUT, PASTE, NONE };
+enum class Key : uint16_t { UP, DOWN, RIGHT, LEFT, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 };
 enum class ModifierKey : uint8_t { CTRL, SHIFT, ALT };
-
 enum class Color : uint16_t { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, DEFAULT };
-
 struct Size { unsigned int rows, columns; };
-
-enum class EscapeState { NONE, ESCAPE, CSI, CSI_LOWERTHAN };
-
-class Character {
-};
-
-class KeyEvent {
-        public:
-                uint32_t getValue() const { return value; }
-        private:
-                uint32_t value;
-};
-
-
-class InputEvent {
-        public:
-                uint32_t getValue() const { return value; }
-        private:
-                uint32_t value;
-};
-
-/*
-struct BackgroundColorOutput {
-        ForegroundColorSinc& operator<<(Color color) { 
-                printf("\033[%dm");
-                return *this;
-        };
-};
-*/
+enum class EscapeState { NONE, ESCAPE, ESCAPE_O, CSI, CSI_LOWERTHAN };
 
 #define WARN_UNUSED __attribute__((warn_unused_result))
-
 
 class Terminal {
         private:
@@ -57,27 +26,10 @@ class Terminal {
 		Terminal();
 		~Terminal();
 
-		void setCursorApp() {
-			this->cursor_app_set = true;
-			printf("\033[?1h"); // CSI ? 1 h, Application Cursor Keys
-			fflush(stdout);
-		}
+		void setCursorApp() { this->cursor_app_set = true; print("\033[?1h"); }
+		void setKeypadApp() { this->keypad_app_set = true; print("\033[66?h"); }
 
-		void setKeypadApp() {
-			this->keypad_app_set = true;
-			//printf("\033[?66h"); // CSI ? 1 h, Application Cursor Keys
-			printf("\033="); // CSI ? 1 h, Application Cursor Keys
-			fflush(stdout);
-		}
-
-		Terminal& placeCursor(unsigned int x, unsigned int y) { print("\033[%u;%uH", flipRow(y), x); return *this; }
-
-                void setBracketedPasteMode(bool set) {
-                        if (set == this->bracketed_paste_mode) return;
-                        printf("\033[?2004%s", set ? "h" : "l");
-                        fflush(stdout);
-                        this->bracketed_paste_mode = set;
-                }
+                void setBracketedPasteMode(bool set) { print("\033[?2004%s", set ? "h" : "l"); this->bracketed_paste_mode = set; }
 
                 Terminal& enterAltScreen() { alt_screen_set = true; decPrivateMode(1049, true); return *this; }
                 Terminal& leaveAltScreen() { alt_screen_set = false; decPrivateMode(1049, false); return *this;  }
@@ -88,34 +40,20 @@ class Terminal {
                 Terminal& sleep(unsigned int milliseconds) { usleep(milliseconds * 1000); return *this; }
                 Terminal& clear() { print("\033[2J"); /* ED – Erase In Display */; return *this; }
 
-                Terminal& setBackground(Color color) { printf("\033[%dm", 40 + int(color)); fflush(stdout); return *this; }
-                Terminal& setForeground(Color color) { printf("\033[%dm", 30 + int(color)); fflush(stdout); return *this; }
-                Terminal& setTitle(char const* fmt, ...) { 
-                        print("\033]0;");
-                        va_list argp;
-                        va_start(argp, fmt);
-                        vfprintf(stdout, fmt, argp);
-                        va_end(argp);
-                        fflush(stdout);
-                        print("\007");
-                        return *this;
-                }
+                Terminal& setBackground(Color color) { print("\033[%dm", 40 + int(color)); return *this; }
+                Terminal& setForeground(Color color) { print("\033[%dm", 30 + int(color)); return *this; }
+                Terminal& resetColorsAndStyle() { print("\033[0m"); return *this; }
+                Terminal& setTitle(char const* fmt, ...);
 
                 Terminal& showCursor() { cursor_hidden = false; decPrivateMode(25, true); return *this; }
                 Terminal& hideCursor() { cursor_hidden = true; decPrivateMode(25, false); return *this; }
-
+		Terminal& placeCursor(unsigned int x, unsigned int y) { print("\033[%u;%uH", flipRow(y), x); return *this; }
                 Terminal& moveCursor(int up, int right);
 
                 Terminal& enableMouse() { mouse_enabled = true; decPrivateMode(1000, true); decPrivateMode(1006, true); return *this; }
                 Terminal& disableMouse() { mouse_enabled = false; decPrivateMode(1000, false); decPrivateMode(1006, false); return *this; }
 
-                void print(char const* fmt, ...) {
-                        va_list argp;
-                        va_start(argp, fmt);
-                        vfprintf(stdout, fmt, argp);
-                        va_end(argp);
-                        fflush(stdout);
-                };
+                Terminal& print(char const* fmt, ...);
                 uint32_t columns() const { return mColumns; }
                 uint32_t rows() const { return mRows; }
 
@@ -123,7 +61,6 @@ class Terminal {
                 bool modifierShift() const { return (mLastModifierKeys & (1 << int(ModifierKey::SHIFT))) != 0; }
 
                 void fillRectangle(unsigned int column, unsigned int row, unsigned int columns, unsigned int rows, uint32_t codepoint);
-                //Size size() const { Size s; s.rows = rows; s.columns = columns; return s; }
                 uint32_t lastCharacter() const { return mLastCharacter; }
                 Key lastKey() const { return mLastKey; }
 
