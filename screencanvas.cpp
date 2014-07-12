@@ -120,8 +120,52 @@ void Terminal::processByte(uint8_t byte) {
                         if (byte == 27) {
                                 mEscapeState = EscapeState::ESCAPE;
                         } else {
-                                mLastCharacter = byte;
-                                mLastEventType = EventType::CHAR;
+                                if (mUtf8Remaining > 0) {
+                                        if ((byte & 0b11000000) != 0b10000000) {
+                                                // Not a UTF-8 continuation byte so replace the entire sequence up to now with the replacement char:
+                                                mLastCharacter = 0xFFFD;
+                                                mLastEventType = EventType::CHAR;
+                                        } else {
+                                                mUtf8Buffer[mUtf8Index++] = byte;
+                                                if (--mUtf8Remaining == 0) {
+                                                        uint8_t firstByteMask = (uint8_t) (mUtf8Index == 2 ? 0b00011111 : (mUtf8Index == 3 ? 0b00001111 : 0b00000111));
+                                                        uint32_t codePoint = (mUtf8Buffer[0] & firstByteMask);
+                                                        for (unsigned int i = 1; i < mUtf8Index; i++)
+                                                                codePoint = ((codePoint << 6) | (mUtf8Buffer[i] & 0b00111111));
+                                                        if (((codePoint <= 0b1111111) && mUtf8Index > 1) || (codePoint < 0b11111111111 && mUtf8Index > 2)
+                                                                        || (codePoint < 0b1111111111111111 && mUtf8Index > 3)) {
+                                                                // Overlong encoding.
+                                                                codePoint = 0xFFFD;
+                                                        }
+
+                                                        mUtf8Index = mUtf8Remaining = 0;
+
+                                                        if (codePoint >= 0x80 && codePoint <= 0x9F) {
+                                                                // Sequence decoded to a C1 control character which is
+                                                                // the same as ESC followed by ((code & 0x7f) + 0x40).
+                                                                // processCodePoint(27);
+                                                                // FIXME
+                                                                // processCodePoint((codePoint & 0x7F) + 0x40);
+                                                        } else {
+                                                                //if (Character.UNASSIGNED == Character.getType(codePoint)) codePoint = UNICODE_REPLACEMENT_CHAR;
+                                                                mLastCharacter = 0xFFFD;
+                                                                mLastEventType = EventType::CHAR;
+                                                        }
+                                                }
+                                        }
+                                } else {
+                                        if ((byte & 0b10000000) == 0) { // The leading bit is not set so it is a 7-bit ASCII character.
+                                                mLastCharacter = byte;
+                                                mLastEventType = EventType::CHAR;
+                                        } else if ((byte & 0b11100000) == 0b11000000) { // 110xxxxx, a two-byte sequence.
+                                                mUtf8Remaining = 1;
+                                        } else if ((byte & 0b11110000) == 0b11100000) { // 1110xxxx, a three-byte sequence.
+                                                mUtf8Remaining = 2;
+                                        } else if ((byte & 0b11111000) == 0b11110000) { // 11110xxx, a four-byte sequence.
+                                                mUtf8Remaining = 3;
+                                        } 
+                                        mUtf8Buffer[mUtf8Index++] = byte;
+                                }
                         }
                         break;
                 case EscapeState::ESCAPE:

@@ -53,6 +53,9 @@ class Terminal {
                 Terminal& enableMouse() { mouse_enabled = true; decPrivateMode(1000, true); decPrivateMode(1006, true); return *this; }
                 Terminal& disableMouse() { mouse_enabled = false; decPrivateMode(1000, false); decPrivateMode(1006, false); return *this; }
 
+                Terminal& insertLines(unsigned int lines) { print("\033[%dL", lines); return *this; }
+                Terminal& deleteLines(unsigned int lines) { print("\033[%dM", lines); return *this; }
+
                 Terminal& print(char const* fmt, ...);
                 uint32_t columns() const { return mColumns; }
                 uint32_t rows() const { return mRows; }
@@ -71,6 +74,9 @@ class Terminal {
                 uint8_t mReadBuffer[32];
                 unsigned int mReadBufferLength{0};
                 unsigned int mReadBufferOffset{0};
+                uint8_t mUtf8Buffer[4];
+                unsigned int mUtf8Index{0};
+                unsigned int mUtf8Remaining{0};
                 bool const is_tty{!!isatty(0)};
 		struct termios vt_orig;
 		bool cursor_app_set{false};

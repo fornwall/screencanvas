@@ -7,7 +7,7 @@ int main() {
         term.placeCursor(term.columns() / 2, term.rows() - 1).print("[HELLO WORLD]");
         term.placeCursor(5, 5);
         term.setForeground(Color::BLACK).setBackground(Color::GREEN).clear();
-         term.fillRectangle(50, 8, 60, 10, 'X');
+        term.fillRectangle(50, 8, 60, 10, 'X');
         term.print("Hello %d, %d", term.rows(), term.columns());
         bool run = true;
         while (run) {
@@ -41,6 +41,8 @@ int main() {
                                        else if (c == 'R') term.resetColorsAndStyle();
                                        else if (c >= '0' && c <= '9') term.setBackground(Color(int(Color::BLACK) + (c - '0')));
                                        else if (c == 'F') term.print("枝");
+                                       else if (c == 'L') term.insertLines(2);
+                                       else if (c == 'D') term.deleteLines(2);
                                        else term.print("%c",(char) c);
                                }
                                break;
