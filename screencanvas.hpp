@@ -20,8 +20,8 @@ enum class EscapeState { NONE, ESCAPE, ESCAPE_O, CSI, CSI_LOWERTHAN };
 
 class Terminal {
         private:
-                /** Coordinate system is 0,0 in lower left corner ranging to (cols-1, rows-1) */
-                unsigned int WARN_UNUSED flipRow(unsigned int row) const { return mRows - row - 1; }
+                /** Coordinate system is 0,0 in lower left corner ranging to (cols-1, rows-1). */
+                unsigned int WARN_UNUSED flipRow(unsigned int row) const { return mRows - row; }
 	public:
 		Terminal();
 		~Terminal();
@@ -47,8 +47,13 @@ class Terminal {
 
                 Terminal& showCursor() { cursor_hidden = false; decPrivateMode(25, true); return *this; }
                 Terminal& hideCursor() { cursor_hidden = true; decPrivateMode(25, false); return *this; }
-		Terminal& placeCursor(unsigned int x, unsigned int y) { print("\033[%u;%uH", flipRow(y), x); return *this; }
+		Terminal& placeCursor(unsigned int x, unsigned int y) { print("\033[%u;%uH", flipRow(y), x + 1); return *this; }
+		Terminal& placeCursorAtColumn(unsigned int x) { print("\033[%uG", x + 1); return *this; }
                 Terminal& moveCursor(int up, int right);
+
+                Terminal& setCursorStyleBlock() { print("\033[2 q"); return *this; }
+                Terminal& setCursorStyleUnderline() { print("\033[4 q"); return *this; }
+                Terminal& setCursorStyleBar() { print("\033[6 q"); return *this; }
 
                 Terminal& enableMouse() { mouse_enabled = true; decPrivateMode(1000, true); decPrivateMode(1006, true); return *this; }
                 Terminal& disableMouse() { mouse_enabled = false; decPrivateMode(1000, false); decPrivateMode(1006, false); return *this; }
