@@ -4,10 +4,14 @@ int main() {
 
         Terminal term;
         term.enterAltScreen().enableMouse().placeCursor(50, 50);
-        term.placeCursor(term.columns() / 2, term.rows() - 1).print("[HELLO WORLD]");
-        term.placeCursor(5, 5);
-        term.setForeground(Color::BLACK).setBackground(Color::GREEN).clear();
+        term
+                //.setForeground(Color::BLACK)
+                //.setBackground(Color::GREEN)
+                .clear();
         term.fillRectangle(50, 8, 60, 10, 'X');
+        term.placeCursor(term.columns() / 2, term.rows() - 1).print("[HELLO WORLD TOP]");
+        term.placeCursor(term.columns() / 2, 0).print("[HELLO WORLD BOTTOM]");
+        term.placeCursor(5, 5);
         term.print("Hello %d, %d", term.rows(), term.columns());
         bool run = true;
         while (run) {
@@ -37,10 +41,26 @@ int main() {
                                {
                                        uint32_t c = term.lastCharacter();
                                        if (c == 3 || c == 4) run = false;
-                                       if (c == 'C') term.clear().placeCursor(40, 5).setTitle("CLEARED");
+                                       if (c == 'A') term.placeCursorAtColumn(term.columns() - 1);
+                                       else if (c == '|') term.setCursorStyleBar();
+                                       else if (c == 'B') term.setCursorStyleBlock();
+                                       else if (c == '_') term.setCursorStyleUnderline();
+                                       else if (c == 'C') term.clear().placeCursor(40, 5).setTitle("CLEARED");
+                                       else if (c == 'U') term.clear()
+                                                          .placeCursor(0, 5).print("\u0302")
+                                                          .placeCursor(40, 5).print("o\u0302")
+                                                          .placeCursor(40, 6).print("\u0302")
+                                                          .placeCursor(term.columns() - 1, 7).print("o\u0302")
+                                                          .placeCursor(40,  8).print("uo").placeCursor(45, 8).placeCursor(41, 8).print("\u0302")
+                                                          .placeCursor(40,  9).print("枝").print("\u0302")
+                                                          .placeCursor(40, 10).print("枝").placeCursorAtColumn(42).print("\u0302")
+                                                          .placeCursor(40, 11).print("枝").placeCursorAtColumn(45).placeCursorAtColumn(42).print("\u0302")
+                                                          .placeCursor(40, 12).print("枝").placeCursorAtColumn(45).placeCursorAtColumn(41).print("\u0302")
+                                                          .placeCursor(40, 20);
                                        else if (c == 'R') term.resetColorsAndStyle();
                                        else if (c >= '0' && c <= '9') term.setBackground(Color(int(Color::BLACK) + (c - '0')));
                                        else if (c == 'F') term.print("枝");
+                                       else if (c == 'I') term.placeCursorAtColumn(0);
                                        else if (c == 'L') term.insertLines(2);
                                        else if (c == 'D') term.deleteLines(2);
                                        else term.print("%c",(char) c);
