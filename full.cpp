@@ -1,7 +1,6 @@
 #include "screencanvas.hpp"
 
 int main() {
-
         Terminal term;
         term.enterAltScreen().enableMouse().placeCursor(50, 50);
         term
@@ -18,10 +17,10 @@ int main() {
                 switch (term.await()) {
                         case EventType::KEY:
                                 switch (term.lastKey()) {
-                                        case Key::UP: term.moveCursor(1, 0); break;
-                                        case Key::DOWN: term.moveCursor(-1, 0); break;
-                                        case Key::LEFT: term.moveCursor(0, -1); break;
-                                        case Key::RIGHT: term.moveCursor(0, 1); break;
+                                        case Key::UP: term.moveCursor(0, 1); break;
+                                        case Key::DOWN: term.moveCursor(0, -1); break;
+                                        case Key::LEFT: term.moveCursor(-1, 0); break;
+                                        case Key::RIGHT: term.moveCursor(1, 0); break;
                                         case Key::F1: term.setForeground(Color::RED).print("F1"); break;
                                         case Key::F2: term.setForeground(Color::GREEN).print("F2"); break;
                                         case Key::F3: term.setForeground(Color::BLUE).print("F3"); break;
@@ -44,25 +43,32 @@ int main() {
                                        if (c == 'A') term.placeCursorAtColumn(term.columns() - 1);
                                        else if (c == '|') term.setCursorStyleBar();
                                        else if (c == 'B') term.setCursorStyleBlock();
-                                       else if (c == '_') term.setCursorStyleUnderline();
                                        else if (c == 'C') term.clear().placeCursor(40, 5).setTitle("CLEARED");
+                                       else if (c == 'D') term.deleteLines(2);
                                        else if (c == 'U') term.clear()
-                                                          .placeCursor(0, 5).print("\u0302")
-                                                          .placeCursor(40, 5).print("o\u0302")
-                                                          .placeCursor(40, 6).print("\u0302")
-                                                          .placeCursor(term.columns() - 1, 7).print("o\u0302")
-                                                          .placeCursor(40,  8).print("uo").placeCursor(45, 8).placeCursor(41, 8).print("\u0302")
-                                                          .placeCursor(40,  9).print("枝").print("\u0302")
-                                                          .placeCursor(40, 10).print("枝").placeCursorAtColumn(42).print("\u0302")
-                                                          .placeCursor(40, 11).print("枝").placeCursorAtColumn(45).placeCursorAtColumn(42).print("\u0302")
-                                                          .placeCursor(40, 12).print("枝").placeCursorAtColumn(45).placeCursorAtColumn(41).print("\u0302")
-                                                          .placeCursor(40, 20);
+                                                          .placeCursor(5, 5).print("Just one combining:  \u0302")
+                                                          .placeCursor(5, 6).print("'o' followed by combining: o\u0302")
+                                                          .placeCursor(5, 7).print("'o' followed by combining, then go back and replace: o\u0302").moveCursor(-1,0).print("U")
+                                                          .placeCursor(5, 8).print("'o' last column followed by combining:").placeCursor(term.columns() - 1, 8).print("o\u0302")
+                                                          .placeCursor(5,  9).print("'ou', then back and combining: ou").moveCursor(-1, 0).print("\u0302")
+                                                          .placeCursor(5, 10).print("Double-width and combining: 枝").print("\u0302")
+                                                          .placeCursor(5, 11).print("Double, back 1 and combining: 枝").moveCursor(-1, 0).print("\u0302")
+                                                          .placeCursor(5, 12).print("Double, back 2 and combining: 枝").moveCursor(-2, 0).print("\u0302")
+                                                          .placeCursor(5, 13).print("枝").placeCursorAtColumn(45).placeCursorAtColumn(41).print("\u0302")
+                                                          .placeCursor(5, 14).print("Double-width, back 2 and a: '枝'").moveCursor(-3, 0).print("a")
+                                                          .placeCursor(5, 15).print("Double-width, back 1 and a: '枝'").moveCursor(-2, 0).print("a")
+                                                          .placeCursor(5, 16).print("Double-width in last col:").placeCursorAtColumn(term.columns()-1).print("枝")
+                                                          .placeCursor(5, 17).print("Single-width in last col:").placeCursorAtColumn(term.columns()-1).print("a")
+                                                          .placeCursor(5, 18).print("Combining in first col <=").placeCursorAtColumn(0).print("\u0302")
+                                                          .placeCursor(5, 19).print("a to last column and combining:").placeCursorAtColumn(term.columns()-1).print("a\u0302")
+                                                          .placeCursor(5, 20);
                                        else if (c == 'R') term.resetColorsAndStyle();
                                        else if (c >= '0' && c <= '9') term.setBackground(Color(int(Color::BLACK) + (c - '0')));
                                        else if (c == 'F') term.print("枝");
                                        else if (c == 'I') term.placeCursorAtColumn(0);
                                        else if (c == 'L') term.insertLines(2);
-                                       else if (c == 'D') term.deleteLines(2);
+                                       else if (c == 'Z') term.print("\u0302");
+                                       else if (c == '_') term.setCursorStyleUnderline();
                                        else term.print("%c",(char) c);
                                }
                                break;
@@ -75,7 +81,7 @@ int main() {
                        case EventType::MOUSE_DOWN:
                        case EventType::MOUSE_UP:
                                term.placeCursor(term.lastMouseColumn(), term.lastMouseRow());
-                               term.fillRectangle(term.lastMouseColumn(), term.lastMouseRow(), term.lastMouseColumn()+10, term.lastMouseRow()+3, 'X');
+                               //term.fillRectangle(term.lastMouseColumn(), term.lastMouseRow(), term.lastMouseColumn()+10, term.lastMouseRow()+3, 'X');
                                break;
                        default:
                                break;

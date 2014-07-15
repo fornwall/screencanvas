@@ -49,7 +49,7 @@ class Terminal {
                 Terminal& hideCursor() { cursor_hidden = true; decPrivateMode(25, false); return *this; }
 		Terminal& placeCursor(unsigned int x, unsigned int y) { print("\033[%u;%uH", flipRow(y), x + 1); return *this; }
 		Terminal& placeCursorAtColumn(unsigned int x) { print("\033[%uG", x + 1); return *this; }
-                Terminal& moveCursor(int up, int right);
+                Terminal& moveCursor(int right, int up);
 
                 Terminal& setCursorStyleBlock() { print("\033[2 q"); return *this; }
                 Terminal& setCursorStyleUnderline() { print("\033[4 q"); return *this; }

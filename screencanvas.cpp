@@ -96,7 +96,7 @@ EventType Terminal::await() {
         return mLastEventType;
 }
 
-Terminal& Terminal::moveCursor(int up, int right) {
+Terminal& Terminal::moveCursor(int right, int up) {
         // CSI Ps A Cursor Up Ps Times (default = 1) (CUU).
         // CSI Ps B Cursor Down Ps Times (default = 1) (CUD).
         // CSI Ps C Cursor Forward Ps Times (default = 1) (CUF).
@@ -224,7 +224,7 @@ void Terminal::processByte(uint8_t byte) {
                                         if (mCurrentEscapeArg != 2) {
                                                 escapeError("MOUSE: %d, %c", mCurrentEscapeArg, byte);
                                         } else {
-                                                mLastMouseColumn = argAsNumber(1);
+                                                mLastMouseColumn = argAsNumber(1) - 1;
                                                 mLastMouseRow = flipRow(argAsNumber(2));
                                                 mLastEventType = (byte == 'M') ? EventType::MOUSE_DOWN : EventType::MOUSE_UP;
                                                 escapeDone();
