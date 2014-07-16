@@ -67,6 +67,7 @@ int main() {
                                        else if (c == 'F') term.print("枝");
                                        else if (c == 'I') term.placeCursorAtColumn(0);
                                        else if (c == 'L') term.insertLines(2);
+                                       else if (c == 'X') term.erase(2);
                                        else if (c == 'Z') term.print("\u0302");
                                        else if (c == '_') term.setCursorStyleUnderline();
                                        else term.print("%c",(char) c);

@@ -51,6 +51,8 @@ class Terminal {
 		Terminal& placeCursorAtColumn(unsigned int x) { print("\033[%uG", x + 1); return *this; }
                 Terminal& moveCursor(int right, int up);
 
+                Terminal& erase(unsigned int chars) { print("\033[%dX", chars); return *this; }
+
                 Terminal& setCursorStyleBlock() { print("\033[2 q"); return *this; }
                 Terminal& setCursorStyleUnderline() { print("\033[4 q"); return *this; }
                 Terminal& setCursorStyleBar() { print("\033[6 q"); return *this; }
@@ -60,6 +62,8 @@ class Terminal {
 
                 Terminal& insertLines(unsigned int lines) { print("\033[%dL", lines); return *this; }
                 Terminal& deleteLines(unsigned int lines) { print("\033[%dM", lines); return *this; }
+
+                Terminal& setMargins(unsigned int top, unsigned int bottom) { print("\033[%d;%dr", top, bottom); return *this; }
 
                 Terminal& print(char const* fmt, ...);
                 uint32_t columns() const { return mColumns; }
