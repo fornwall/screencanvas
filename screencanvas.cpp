@@ -224,9 +224,13 @@ void Terminal::processByte(uint8_t byte) {
                                         if (mCurrentEscapeArg != 2) {
                                                 escapeError("MOUSE: %d, %c", mCurrentEscapeArg, byte);
                                         } else {
-                                                mLastMouseColumn = argAsNumber(1) - 1;
-                                                mLastMouseRow = flipRow(argAsNumber(2));
-                                                mLastEventType = (byte == 'M') ? EventType::MOUSE_DOWN : EventType::MOUSE_UP;
+                                                int mouseButtonCode = argAsNumber(0);
+                                                if (mouseButtonCode >= 32) {
+                                                } else {
+                                                        mLastMouseColumn = argAsNumber(1) - 1;
+                                                        mLastMouseRow = flipRow(argAsNumber(2));
+                                                        mLastEventType = (byte == 'M') ? EventType::MOUSE_DOWN : EventType::MOUSE_UP;
+                                                }
                                                 escapeDone();
                                         }
                                         break;

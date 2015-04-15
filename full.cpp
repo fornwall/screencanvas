@@ -3,6 +3,7 @@
 int main() {
         Terminal term;
         term.enterAltScreen().enableMouse().placeCursor(50, 50);
+        term.setWrapAround(true);
         term
                 //.setForeground(Color::BLACK)
                 //.setBackground(Color::GREEN)
@@ -23,16 +24,16 @@ int main() {
                                         case Key::RIGHT: term.moveCursor(1, 0); break;
                                         case Key::F1: term.setForeground(Color::RED).print("F1"); break;
                                         case Key::F2: term.setForeground(Color::GREEN).print("F2"); break;
-                                        case Key::F3: term.setForeground(Color::BLUE).print("F3"); break;
-                                        case Key::F4: term.setForeground(Color::YELLOW).print("F4"); break;
-                                        case Key::F5: term.setForeground(Color::BLACK).print("F5"); break;
-                                        case Key::F6: term.setForeground(Color::BLACK).print("F6"); break;
-                                        case Key::F7: term.setForeground(Color::BLACK).print("F7"); break;
-                                        case Key::F8: term.setForeground(Color::BLACK).print("F8"); break;
-                                        case Key::F9: term.setForeground(Color::BLACK).print("F9"); break;
-                                        case Key::F10: term.setForeground(Color::BLACK).print("F10"); break;
-                                        case Key::F11: term.setForeground(Color::BLACK).print("F11"); break;
-                                        case Key::F12: term.setForeground(Color::BLACK).print("F12"); break;
+                                        case Key::F3: term.setForeground(Color::YELLOW).print("F3"); break;
+                                        case Key::F4: term.setForeground(Color::BLUE).print("F4"); break;
+                                        case Key::F5: term.setForeground(Color::MAGENTA).print("F5"); break;
+                                        case Key::F6: term.setForeground(Color::CYAN).print("F6"); break;
+                                        case Key::F7: term.setForeground(Color::WHITE).print("F7"); break;
+                                        case Key::F8: term.setForeground(Color::RED).print("F8"); break;
+                                        case Key::F9: term.setForeground(Color::GREEN).print("F9"); break;
+                                        case Key::F10: term.setForeground(Color::YELLOW).print("F10"); break;
+                                        case Key::F11: term.setForeground(Color::BLUE).print("F11"); break;
+                                        case Key::F12: term.setForeground(Color::MAGENTA).print("F12"); break;
                                         default: break;
                                 }
                                 break;
@@ -45,6 +46,7 @@ int main() {
                                        else if (c == 'B') term.setCursorStyleBlock();
                                        else if (c == 'C') term.clear().placeCursor(40, 5).setTitle("CLEARED");
                                        else if (c == 'D') term.deleteLines(2);
+                                       else if (c == 'E') term.deleteCells(1);
                                        else if (c == 'U') term.clear()
                                                           .placeCursor(5, 5).print("Just one combining:  \u0302")
                                                           .placeCursor(5, 6).print("'o' followed by combining: o\u0302")
@@ -67,6 +69,7 @@ int main() {
                                        else if (c == 'F') term.print("枝");
                                        else if (c == 'I') term.placeCursorAtColumn(0);
                                        else if (c == 'L') term.insertLines(2);
+                                       else if (c == 'W') term.setWrapAround(false);
                                        else if (c == 'X') term.erase(2);
                                        else if (c == 'Z') term.print("\u0302");
                                        else if (c == '_') term.setCursorStyleUnderline();
